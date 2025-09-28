@@ -1,0 +1,5 @@
+{
+  "name": "Puja Bhog Distributor",
+  "description": "An application to manage and track the distribution of Kali Pujo bhog for an apartment complex, using real-time data from a Google Sheet.",
+  "requestFramePermissions": []
+}
