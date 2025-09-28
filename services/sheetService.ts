@@ -1,5 +1,5 @@
 import { APPS_SCRIPT_URL } from '../constants';
-import type { FlatData, DistributionDay } from '../types';
+import type { FlatData, DistributionDay, NewFlatData } from '../types';
 
 export const fetchFlatsData = async (day: DistributionDay): Promise<FlatData[]> => {
   const sheetName = day === 'day1' ? 'Day 1' : 'Day 2';
@@ -34,6 +34,47 @@ export const fetchFlatsData = async (day: DistributionDay): Promise<FlatData[]> 
   }
 };
 
+export const addFlat = async (day: DistributionDay, flatData: NewFlatData): Promise<void> => {
+    const url = APPS_SCRIPT_URL;
+    if (!url || url.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
+        throw new Error(`URL is not configured. Cannot add flat.`);
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify({
+                action: 'addFlat',
+                day,
+                data: flatData,
+            }),
+        });
+
+        if (!response.ok) {
+            let errorMessage = response.statusText;
+            try {
+                const errorData = await response.json();
+                if (errorData && errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (e) {
+                const textResponse = await response.text();
+                if (textResponse) {
+                    errorMessage = textResponse;
+                }
+            }
+            throw new Error(`Failed to add flat: ${errorMessage}`);
+        }
+    } catch (error) {
+        console.error(`Failed to add flat to ${day} Google Sheet:`, error);
+        throw error;
+    }
+}
+
 export const updateServedCount = async (rowIndex: number, day: DistributionDay, newCount: number): Promise<void> => {
   const url = APPS_SCRIPT_URL; // Use the single URL for updates
   if (!url || url.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
@@ -47,7 +88,7 @@ export const updateServedCount = async (rowIndex: number, day: DistributionDay, 
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
       },
-      body: JSON.stringify({ rowIndex, day, newCount }),
+      body: JSON.stringify({ action: 'updateCount', rowIndex, day, newCount }),
     });
 
     if (!response.ok) {

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { FlatData, DistributionDay } from './types';
-import { fetchFlatsData, updateServedCount } from './services/sheetService';
+import type { FlatData, DistributionDay, NewFlatData } from './types';
+import { fetchFlatsData, updateServedCount, addFlat } from './services/sheetService';
 import { generateDistributionReport } from './services/geminiService';
 import { FlatCard } from './components/FlatCard';
 import { Summary } from './components/Summary';
 import { ReportModal } from './components/ReportModal';
+import { AddFlatModal } from './components/AddFlatModal';
 
 type AllFlatsState = {
     day1: FlatData[];
@@ -23,6 +24,8 @@ const App: React.FC = () => {
     const [reportContent, setReportContent] = useState('');
     const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
+    const [isAddFlatModalOpen, setIsAddFlatModalOpen] = useState(false);
+
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -31,26 +34,22 @@ const App: React.FC = () => {
             const [dataDay1, dataDay2] = await Promise.all([
                 fetchFlatsData('day1').catch(e => {
                     console.error("Day 1 data failed to load:", e.message);
-                    return []; // Return empty array on failure to not block the UI
+                    throw e; // Re-throw to be caught by the main catch block
                 }),
                 fetchFlatsData('day2').catch(e => {
                     console.error("Day 2 data failed to load:", e.message);
-                    return [];
+                    throw e; // Re-throw to be caught by the main catch block
                 })
             ]);
 
-            // Consolidate errors if any fetch failed
-            const day1Error = dataDay1.length === 0 ? 'Day 1' : '';
-            const day2Error = dataDay2.length === 0 ? 'Day 2' : '';
-            const failedDays = [day1Error, day2Error].filter(Boolean).join(' and ');
-            
-            if (failedDays && (dataDay1.length + dataDay2.length === 0)) {
-                 throw new Error(`No data loaded. Please check that your Google Sheet tabs are named 'Day 1' and 'Day 2' and that your script is deployed correctly.`);
-            }
-
             setAllFlats({ day1: dataDay1, day2: dataDay2 });
         } catch (e: any) {
-            setError(e.message || 'An unknown error occurred while fetching data.');
+            let errorMessage = e.message || 'An unknown error occurred while fetching data.';
+            if (e.message.toLowerCase().includes('failed to fetch')) {
+                errorMessage = "Could not connect to the Google Sheet. Please ensure your Google Apps Script is deployed correctly with 'Anyone' access, and that you've created a new deployment after any script changes. Also, check your internet connection.";
+            }
+            setError(errorMessage);
+            setAllFlats({ day1: [], day2: [] }); // Clear data on error
         } finally {
             setIsLoading(false);
         }
@@ -73,12 +72,13 @@ const App: React.FC = () => {
     }, [searchTerm, allFlats, activeDay]);
     
     const summary = useMemo(() => {
+        if (!allFlats[activeDay]) return { totalSubscribed: 0, totalServed: 0 };
         return allFlats[activeDay].reduce(
             (acc, flat) => {
                 const subscribedKey = activeDay === 'day1' ? 'subscribed_plates_day1' : 'subscribed_plates_day2';
                 const servedKey = activeDay === 'day1' ? 'served_plates_day1' : 'served_plates_day2';
-                acc.totalSubscribed += flat[subscribedKey];
-                acc.totalServed += flat[servedKey];
+                acc.totalSubscribed += flat[subscribedKey] || 0;
+                acc.totalServed += flat[servedKey] || 0;
                 return acc;
             },
             { totalSubscribed: 0, totalServed: 0 }
@@ -121,6 +121,17 @@ const App: React.FC = () => {
         }
     };
     
+    const handleAddFlat = async (newFlatData: NewFlatData) => {
+        try {
+            await addFlat(activeDay, newFlatData);
+            await loadData(); // Refresh data on success
+        } catch (e) {
+            console.error("Failed to add flat:", e);
+            // Re-throw to be caught by the modal's submit handler
+            throw e;
+        }
+    };
+
     const handleGenerateReport = async () => {
         setIsReportModalOpen(true);
         setIsGeneratingReport(true);
@@ -128,7 +139,7 @@ const App: React.FC = () => {
         const dayLabel = activeDay === 'day1' ? "Day 1" : "Day 2";
         let summaryString = `
             ${dayLabel} Progress: ${summary.totalServed} out of ${summary.totalSubscribed} plates served.
-            Number of households participating on ${dayLabel}: ${allFlats[activeDay].length}.
+            Number of households participating on ${dayLabel}: ${allFlats[activeDay]?.length || 0}.
         `;
 
         const report = await generateDistributionReport(summaryString);
@@ -149,7 +160,17 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen p-4 font-sans">
+        <div className="min-h-screen p-4 font-sans pb-24">
+            <button 
+                onClick={() => setIsAddFlatModalOpen(true)}
+                className="fixed bottom-6 right-6 bg-amber-600 hover:bg-amber-700 text-white h-16 w-16 rounded-full shadow-lg flex items-center justify-center z-20 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                aria-label="Add new flat"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+
             <div className="container mx-auto max-w-4xl">
                 <header className="text-center my-6">
                     <h1 className="text-4xl font-bold text-amber-400 tracking-wider">Kali Puja Bhog Distribution</h1>
@@ -175,7 +196,7 @@ const App: React.FC = () => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full p-4 pl-12 text-lg bg-slate-800 border-2 border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                             />
-                            <svg className="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                          </div>
@@ -183,7 +204,8 @@ const App: React.FC = () => {
                     
                     {error && (
                         <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg my-4 text-center">
-                            <p><strong>Error:</strong> {error}</p>
+                            <p className="font-bold">Connection Error</p>
+                            <p className="text-sm">{error}</p>
                             <button onClick={loadData} className="mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded">
                                 Retry
                             </button>
@@ -195,7 +217,7 @@ const App: React.FC = () => {
                             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-400 mx-auto"></div>
                             <p className="mt-4 text-slate-400">Loading all distribution data...</p>
                         </div>
-                    ) : (
+                    ) : !error && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredFlats.length > 0 ? (
                                 filteredFlats.map(flat => (
@@ -209,7 +231,7 @@ const App: React.FC = () => {
                                 ))
                             ) : (
                                 <p className="text-center col-span-full text-slate-500 py-8">
-                                    {allFlats[activeDay].length === 0 ? `No data loaded for ${activeDay === 'day1' ? 'Day 1' : 'Day 2'}. Please check that your Google Sheet tabs are named 'Day 1' and 'Day 2' and that your script is deployed.` : 'No flats found matching your search.'}
+                                    {allFlats[activeDay]?.length === 0 ? `No data loaded for ${activeDay === 'day1' ? 'Day 1' : 'Day 2'}. Please check your connection and Google Sheet setup.` : 'No flats found matching your search.'}
                                 </p>
                             )}
                         </div>
@@ -218,7 +240,7 @@ const App: React.FC = () => {
                     <div className="text-center mt-8">
                       <button 
                         onClick={handleGenerateReport}
-                        disabled={allFlats[activeDay].length === 0}
+                        disabled={!allFlats[activeDay] || allFlats[activeDay].length === 0}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
                       >
                         Generate AI Report for {activeDay === 'day1' ? 'Day 1' : 'Day 2'}
@@ -226,6 +248,12 @@ const App: React.FC = () => {
                     </div>
                 </main>
             </div>
+            <AddFlatModal
+                isOpen={isAddFlatModalOpen}
+                onClose={() => setIsAddFlatModalOpen(false)}
+                onSubmit={handleAddFlat}
+                activeDay={activeDay}
+            />
             <ReportModal 
               isOpen={isReportModalOpen}
               onClose={() => setIsReportModalOpen(false)}

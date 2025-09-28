@@ -54,12 +54,27 @@ const PlateCounter: React.FC<{
 
 
 export const FlatCard: React.FC<FlatCardProps> = ({ flat, onUpdateCount, isUpdating, activeDay }) => {
-  const subscribedPlates = activeDay === 'day1' ? flat.subscribed_plates_day1 : flat.subscribed_plates_day2;
-  const servedPlates = activeDay === 'day1' ? flat.served_plates_day1 : flat.served_plates_day2;
+  // Coalesce undefined/null values to 0 for safety. This prevents UI glitches.
+  const subscribedPlates = (activeDay === 'day1' ? flat.subscribed_plates_day1 : flat.subscribed_plates_day2) || 0;
+  const servedPlates = (activeDay === 'day1' ? flat.served_plates_day1 : flat.served_plates_day2) || 0;
   
   // A flat is only relevant for a day if they subscribed to plates for that day.
   if (subscribedPlates === 0) {
       return null;
+  }
+  
+  // Check for essential data. If it's missing, render an error card.
+  // This helps debug issues with Google Sheet headers.
+  if (!flat.flat_number) {
+    return (
+      <div className="bg-red-900/50 rounded-lg shadow-md p-4 border border-red-700 flex flex-col justify-center items-center text-center">
+        <h3 className="text-lg font-bold text-red-300">Data Error</h3>
+        <p className="text-sm text-red-400 mt-1">
+          Missing 'flat_number'. Please check your Google Sheet column headers match the required format exactly (e.g., 'flat_number', not 'Flat Number').
+        </p>
+        <p className="text-xs text-slate-500 mt-2">Sheet Row: {flat.row_index}</p>
+      </div>
+    );
   }
 
   return (

@@ -11,3 +11,11 @@ export interface FlatData {
 }
 
 export type DistributionDay = 'day1' | 'day2';
+
+export interface NewFlatData {
+    flat_number: string;
+    subscribed_plates: number;
+    name?: string;
+    phone_number?: string;
+    amount_paid?: number;
+}
