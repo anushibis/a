@@ -86,10 +86,9 @@ export const FlatCard: React.FC<FlatCardProps> = ({ flat, onUpdateCount, isUpdat
             {flat.name && <p className="text-sm text-slate-400 mt-1">{flat.name}</p>}
         </div>
 
-        {(flat.phone_number || flat.amount_paid !== undefined) && (
+        {flat.phone_number && (
             <div className="text-xs text-slate-400 mb-4 space-y-1 text-center border-y border-slate-700 py-2">
-                {flat.phone_number && <p>Phone: {flat.phone_number}</p>}
-                {flat.amount_paid !== undefined && <p>Amount Paid: ₹{flat.amount_paid}</p>}
+                <p>Phone: {flat.phone_number}</p>
             </div>
         )}
       </div>

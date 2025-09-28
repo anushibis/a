@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FlatData, DistributionDay, NewFlatData } from './types';
 import { fetchFlatsData, updateServedCount, addFlat } from './services/sheetService';
-import { generateDistributionReport } from './services/geminiService';
 import { FlatCard } from './components/FlatCard';
 import { Summary } from './components/Summary';
-import { ReportModal } from './components/ReportModal';
 import { AddFlatModal } from './components/AddFlatModal';
 
 type AllFlatsState = {
@@ -20,10 +18,6 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [updatingFlats, setUpdatingFlats] = useState<Set<number>>(new Set());
     
-    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-    const [reportContent, setReportContent] = useState('');
-    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-
     const [isAddFlatModalOpen, setIsAddFlatModalOpen] = useState(false);
 
     const loadData = useCallback(async () => {
@@ -133,21 +127,6 @@ const App: React.FC = () => {
         }
     };
 
-    const handleGenerateReport = async () => {
-        setIsReportModalOpen(true);
-        setIsGeneratingReport(true);
-        
-        const dayLabel = activeDay === 'day1' ? "Day 1" : "Day 2";
-        let summaryString = `
-            ${dayLabel} Progress: ${summary.totalServed} out of ${summary.totalSubscribed} plates served.
-            Number of households participating on ${dayLabel}: ${allFlats[activeDay]?.length || 0}.
-        `;
-
-        const report = await generateDistributionReport(summaryString);
-        setReportContent(report);
-        setIsGeneratingReport(false);
-    };
-
     const TabButton: React.FC<{day: DistributionDay, label: string}> = ({ day, label }) => {
         const isActive = activeDay === day;
         const baseClasses = "py-2 px-6 rounded-t-lg font-semibold transition-colors duration-300 focus:outline-none";
@@ -237,28 +216,12 @@ const App: React.FC = () => {
                             )}
                         </div>
                     )}
-                    
-                    <div className="text-center mt-8">
-                      <button 
-                        onClick={handleGenerateReport}
-                        disabled={!allFlats[activeDay] || allFlats[activeDay].length === 0}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
-                      >
-                        Generate AI Report for {activeDay === 'day1' ? 'Day 1' : 'Day 2'}
-                      </button>
-                    </div>
                 </main>
             </div>
             <AddFlatModal
                 isOpen={isAddFlatModalOpen}
                 onClose={() => setIsAddFlatModalOpen(false)}
                 onSubmit={handleAddFlat}
-            />
-            <ReportModal 
-              isOpen={isReportModalOpen}
-              onClose={() => setIsReportModalOpen(false)}
-              content={reportContent}
-              isLoading={isGeneratingReport}
             />
         </div>
     );

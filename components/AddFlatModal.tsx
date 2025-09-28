@@ -13,7 +13,6 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
   const [subscribedPlates, setSubscribedPlates] = useState(1);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [amountPaid, setAmountPaid] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +24,6 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
     setSubscribedPlates(1);
     setName('');
     setPhone('');
-    setAmountPaid('');
     setError(null);
     setIsSubmitting(false);
   }
@@ -50,7 +48,6 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
       subscribed_plates: subscribedPlates,
       name: name.trim() || undefined,
       phone_number: phone.trim() || undefined,
-      amount_paid: amountPaid ? parseFloat(amountPaid) : undefined,
     };
     
     try {
@@ -96,15 +93,9 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
             <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-1">Name (Optional)</label>
             <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} className={inputClass} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-slate-300 mb-1">Phone (Optional)</label>
-              <input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label htmlFor="amountPaid" className="block text-sm font-medium text-slate-300 mb-1">Amount Paid (Optional)</label>
-              <input type="number" id="amountPaid" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} step="0.01" min="0" placeholder="e.g., 500" className={inputClass} />
-            </div>
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-slate-300 mb-1">Phone (Optional)</label>
+            <input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} className={inputClass} />
           </div>
           
           {error && (
