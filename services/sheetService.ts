@@ -34,7 +34,7 @@ export const fetchFlatsData = async (day: DistributionDay): Promise<FlatData[]> 
   }
 };
 
-export const addFlat = async (day: DistributionDay, flatData: NewFlatData): Promise<void> => {
+export const addFlat = async (flatData: NewFlatData): Promise<void> => {
     const url = APPS_SCRIPT_URL;
     if (!url || url.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
         throw new Error(`URL is not configured. Cannot add flat.`);
@@ -48,8 +48,7 @@ export const addFlat = async (day: DistributionDay, flatData: NewFlatData): Prom
                 'Content-Type': 'text/plain;charset=utf-8',
             },
             body: JSON.stringify({
-                action: 'addFlat',
-                day,
+                action: 'addFlatToBothDays',
                 data: flatData,
             }),
         });
@@ -70,7 +69,7 @@ export const addFlat = async (day: DistributionDay, flatData: NewFlatData): Prom
             throw new Error(`Failed to add flat: ${errorMessage}`);
         }
     } catch (error) {
-        console.error(`Failed to add flat to ${day} Google Sheet:`, error);
+        console.error(`Failed to add flat to Google Sheets:`, error);
         throw error;
     }
 }

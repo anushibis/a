@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import type { DistributionDay, NewFlatData } from '../types';
+import type { NewFlatData } from '../types';
 
 interface AddFlatModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: NewFlatData) => Promise<void>;
-  activeDay: DistributionDay;
 }
 
-export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onSubmit, activeDay }) => {
+export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const [flatNumber, setFlatNumber] = useState('');
   const [subscribedPlates, setSubscribedPlates] = useState(1);
   const [name, setName] = useState('');
@@ -67,7 +66,7 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-6 border border-slate-700">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-amber-400">Add New Flat for {activeDay === 'day1' ? 'Day 1' : 'Day 2'}</h2>
+          <h2 className="text-2xl font-bold text-amber-400">Add New Flat</h2>
           <button onClick={handleClose} className="text-slate-400 hover:text-white" disabled={isSubmitting}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

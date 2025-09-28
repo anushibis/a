@@ -123,7 +123,7 @@ const App: React.FC = () => {
     
     const handleAddFlat = async (newFlatData: NewFlatData) => {
         try {
-            await addFlat(activeDay, newFlatData);
+            await addFlat(newFlatData);
             await loadData(); // Refresh data on success
         } catch (e) {
             console.error("Failed to add flat:", e);
@@ -252,7 +252,6 @@ const App: React.FC = () => {
                 isOpen={isAddFlatModalOpen}
                 onClose={() => setIsAddFlatModalOpen(false)}
                 onSubmit={handleAddFlat}
-                activeDay={activeDay}
             />
             <ReportModal 
               isOpen={isReportModalOpen}
