@@ -1,19 +1,20 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-if (!process.env.API_KEY) {
-  // This is a placeholder for development.
-  // In a real environment, the key would be set.
-  console.warn("API_KEY environment variable not set. Gemini features will not work.");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
 export const generateDistributionReport = async (summaryData: string): Promise<string> => {
-  if (!process.env.API_KEY) {
-    return "API key not configured. Please set the API_KEY environment variable to generate reports.";
+  // Check for the existence of `process` before trying to access it.
+  // This prevents the ReferenceError that crashes the app on load in a browser.
+  if (typeof process === 'undefined' || !process.env.API_KEY) {
+    console.warn("API_KEY environment variable not set or not accessible in this environment.");
+    return "AI report generation is not available. The API key is not configured for this deployment. Please follow the deployment guide to set up a secure way to handle the API key, such as using a serverless function.";
   }
+
   try {
+    // Initialize the client here, inside the function call.
+    // This ensures the code only runs when the button is clicked,
+    // and only if the environment supports `process.env`.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const prompt = `
       You are an event management assistant for a cultural festival.
       Based on the following data for bhog distribution, generate a short, friendly, and informative status report.
@@ -34,6 +35,6 @@ export const generateDistributionReport = async (summaryData: string): Promise<s
     return response.text;
   } catch (error) {
     console.error("Error generating report with Gemini:", error);
-    return "Could not generate the report due to an error. Please check the console.";
+    return "Could not generate the report due to an error. Please check the console for details.";
   }
 };
