@@ -27,7 +27,22 @@ export const fetchFlatsData = async (day: DistributionDay): Promise<FlatData[]> 
         throw new Error(`Received unexpected data format for ${day}. Please check the Apps Script and sheet headers.`);
     }
 
-    return data;
+    // Data Transformation: The Google Apps Script returns JSON keys that match the
+    // sheet's column headers exactly, which might be "Building Name" instead of "building_name".
+    // This mapping ensures the data matches the expected `FlatData` interface.
+    const transformedData = data.map((item: any) => ({
+      ...item,
+      building_name: item.building_name || item['Building Name'],
+      flat_number: item.flat_number || item['Flat Number'],
+      name: item.name || item['Name'],
+      phone_number: item.phone_number || item['Phone Number'],
+      subscribed_plates_day1: item.subscribed_plates_day1 || item['Subscribed Plates - Day 1'],
+      served_plates_day1: item.served_plates_day1 || item['Served Plates - Day 1'],
+      subscribed_plates_day2: item.subscribed_plates_day2 || item['Subscribed Plates - Day 2'],
+      served_plates_day2: item.served_plates_day2 || item['Served Plates - Day 2'],
+    }));
+
+    return transformedData;
   } catch (error) {
     console.error(`Failed to fetch data for ${day} from Google Sheet:`, error);
     throw error;
@@ -40,6 +55,18 @@ export const addFlat = async (flatData: NewFlatData): Promise<void> => {
         throw new Error(`URL is not configured. Cannot add flat.`);
     }
 
+    // The Apps Script expects keys that match the column headers in the Google Sheet.
+    // This object transforms our internal snake_case keys to the format the sheet expects.
+    const dataForSheet = {
+      'Building Name': flatData.building_name,
+      'Flat Number': flatData.flat_number,
+      // The `addFlatToBothDays` action in the script is responsible for putting this value
+      // into the correct "Subscribed Plates - Day X" column on each sheet.
+      'Subscribed Plates': flatData.subscribed_plates,
+      'Name': flatData.name,
+      'Phone Number': flatData.phone_number,
+    };
+
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -49,7 +76,7 @@ export const addFlat = async (flatData: NewFlatData): Promise<void> => {
             },
             body: JSON.stringify({
                 action: 'addFlatToBothDays',
-                data: flatData,
+                data: dataForSheet, // Send the transformed data
             }),
         });
 
