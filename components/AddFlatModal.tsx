@@ -8,6 +8,7 @@ interface AddFlatModalProps {
 }
 
 export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onSubmit }) => {
+  const [buildingName, setBuildingName] = useState('');
   const [flatNumber, setFlatNumber] = useState('');
   const [subscribedPlates, setSubscribedPlates] = useState(1);
   const [name, setName] = useState('');
@@ -19,6 +20,7 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
   if (!isOpen) return null;
 
   const handleReset = () => {
+    setBuildingName('');
     setFlatNumber('');
     setSubscribedPlates(1);
     setName('');
@@ -35,14 +37,15 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!flatNumber.trim() || subscribedPlates < 1) {
-      setError('Flat Number and at least 1 Subscribed Plate are required.');
+    if (!buildingName.trim() || !flatNumber.trim() || subscribedPlates < 1) {
+      setError('Building Name, Flat Number and at least 1 Subscribed Plate are required.');
       return;
     }
     setError(null);
     setIsSubmitting(true);
     
     const newFlatData: NewFlatData = {
+      building_name: buildingName.trim(),
       flat_number: flatNumber.trim().toUpperCase(),
       subscribed_plates: subscribedPlates,
       name: name.trim() || undefined,
@@ -75,6 +78,10 @@ export const AddFlatModal: React.FC<AddFlatModalProps> = ({ isOpen, onClose, onS
         </div>
         
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <label htmlFor="buildingName" className="block text-sm font-medium text-slate-300 mb-1">Building Name <span className="text-red-400">*</span></label>
+            <input type="text" id="buildingName" value={buildingName} onChange={e => setBuildingName(e.target.value)} className={inputClass} required />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="flatNumber" className="block text-sm font-medium text-slate-300 mb-1">Flat Number <span className="text-red-400">*</span></label>

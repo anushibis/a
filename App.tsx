@@ -65,10 +65,11 @@ const App: React.FC = () => {
             return flatsForActiveDay;
         }
         const lowercasedFilter = searchTerm.toLowerCase();
-        return flatsForActiveDay.filter(flat =>
-            flat.flat_number.toLowerCase().includes(lowercasedFilter) ||
-            flat.name?.toLowerCase().includes(lowercasedFilter)
-        );
+        return flatsForActiveDay.filter(flat => {
+            const flatNumberStr = String(flat.flat_number || '').toLowerCase();
+            const nameStr = (flat.name || '').toLowerCase();
+            return flatNumberStr.includes(lowercasedFilter) || nameStr.includes(lowercasedFilter);
+        });
     }, [searchTerm, allFlats, activeDay]);
     
     const summary = useMemo(() => {

@@ -65,12 +65,12 @@ export const FlatCard: React.FC<FlatCardProps> = ({ flat, onUpdateCount, isUpdat
   
   // Check for essential data. If it's missing, render an error card.
   // This helps debug issues with Google Sheet headers.
-  if (!flat.flat_number) {
+  if (!flat.flat_number || !flat.building_name) {
     return (
       <div className="bg-red-900/50 rounded-lg shadow-md p-4 border border-red-700 flex flex-col justify-center items-center text-center">
         <h3 className="text-lg font-bold text-red-300">Data Error</h3>
         <p className="text-sm text-red-400 mt-1">
-          Missing 'flat_number'. Please check your Google Sheet column headers match the required format exactly (e.g., 'flat_number', not 'Flat Number').
+          Missing 'building_name' or 'flat_number'. Please check your Google Sheet column headers match the required format exactly (e.g., 'building_name', 'flat_number').
         </p>
         <p className="text-xs text-slate-500 mt-2">Sheet Row: {flat.row_index}</p>
       </div>
@@ -81,8 +81,9 @@ export const FlatCard: React.FC<FlatCardProps> = ({ flat, onUpdateCount, isUpdat
     <div className="bg-slate-800 rounded-lg shadow-md p-4 border border-slate-700 flex flex-col justify-between">
       <div>
         <div className="text-center mb-2">
-            <h3 className="text-2xl font-bold text-amber-400">{flat.flat_number}</h3>
-            {flat.name && <p className="text-sm text-slate-300 mt-1">{flat.name}</p>}
+            <h3 className="text-lg font-semibold text-slate-300 tracking-wide">{flat.building_name}</h3>
+            <p className="text-3xl font-bold text-amber-400">{flat.flat_number}</p>
+            {flat.name && <p className="text-sm text-slate-400 mt-1">{flat.name}</p>}
         </div>
 
         {(flat.phone_number || flat.amount_paid !== undefined) && (
